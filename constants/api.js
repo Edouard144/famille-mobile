@@ -44,6 +44,12 @@ async function request(method, path, body = null) {
 // ── Auth API ──────────────────────────────────────────
 // Matches: /api/auth/* in AuthServlet.java
 // ─────────────────────────────────────────────────────
+// constants/api.js
+// The base URL for all backend API calls
+// 10.0.2.2 = Android emulator's way to reach your PC's localhost
+
+export const API_BASE_URL = 'http://10.0.2.2:8080/api';
+
 export const authAPI = {
 
   // GET /api/captcha → returns PNG image URL

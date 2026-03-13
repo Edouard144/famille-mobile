@@ -1,54 +1,88 @@
-// Web-compatible storage for Famille app
-// Uses AsyncStorage for web, SecureStore for native
+// services/storage.js
+// Secure storage for JWT token and user info
+// On mobile: uses expo-secure-store (encrypted)
+// On web:    uses memory only (no persistence — web is for demo)
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// Keys used to store data on the device
-const KEYS = {
-  token:    'famille_jwt_token',   // JWT from login
-  userId:   'famille_user_id',     // logged in user's ID
-  userName: 'famille_user_name',   // shown on dashboard
-};
+// We lazy-import SecureStore only on native
+// to avoid crashes on web
+async function getSecureStore() {
+  if (Platform.OS === 'web') return null;
+  return await import('expo-secure-store');
+}
 
+// ── In-memory fallback for web ─────────────────────
+// Web doesn't persist between refreshes — that's fine
+// for demo/testing purposes
+const memoryStore = {};
+
+async function setItem(key, value) {
+  if (Platform.OS === 'web') {
+    memoryStore[key] = value;
+    return;
+  }
+  const SecureStore = await getSecureStore();
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function getItem(key) {
+  if (Platform.OS === 'web') {
+    return memoryStore[key] || null;
+  }
+  const SecureStore = await getSecureStore();
+  return await SecureStore.getItemAsync(key);
+}
+
+async function deleteItem(key) {
+  if (Platform.OS === 'web') {
+    delete memoryStore[key];
+    return;
+  }
+  const SecureStore = await getSecureStore();
+  await SecureStore.deleteItemAsync(key);
+}
+
+// ── Public API ────────────────────────────────────
 const storage = {
 
-  // ── Save JWT token after login ──────────────────
+  // Save JWT token after login/verify
   async saveToken(token) {
-    // Use AsyncStorage which works on both web and native
-    await AsyncStorage.setItem(KEYS.token, token);
+    await setItem('jwt_token', token);
   },
 
-  // ── Get JWT token for API calls ─────────────────
+  // Get JWT token for API requests
   async getToken() {
-    return await AsyncStorage.getItem(KEYS.token);
+    return await getItem('jwt_token');
   },
 
-  // ── Save user info after login ──────────────────
-  async saveUser(userId, userName) {
-    await AsyncStorage.setItem(KEYS.userId, String(userId));
-    await AsyncStorage.setItem(KEYS.userName, userName);
+  // Save user id and name after login
+  async saveUser(userId, name) {
+    await setItem('user_id',   String(userId));
+    await setItem('user_name', name);
   },
 
-  // ── Get user ID ─────────────────────────────────
+  // Get user id
   async getUserId() {
-    const id = await AsyncStorage.getItem(KEYS.userId);
-    return id ? parseInt(id) : null;
+    return await getItem('user_id');
   },
 
-  // ── Get user name for greeting ──────────────────
+  // Get user display name
   async getUserName() {
-    return await AsyncStorage.getItem(KEYS.userName);
+    return await getItem('user_name');
   },
 
-  // ── Clear everything on logout ──────────────────
-  async clearAll() {
-    await AsyncStorage.multiRemove([KEYS.token, KEYS.userId, KEYS.userName]);
-  },
-
-  // ── Check if user is logged in ──────────────────
+  // Check if user has a valid token saved
   async isLoggedIn() {
-    const token = await AsyncStorage.getItem(KEYS.token);
-    return token !== null && token !== undefined;
+    const token = await getItem('jwt_token');
+    return !!token; // true if token exists
+  },
+
+  // Clear everything on logout
+  async clearAll() {
+    await deleteItem('jwt_token');
+    await deleteItem('user_id');
+    await deleteItem('user_name');
   },
 };
 
