@@ -388,4 +388,4 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textDecorationLine: 'underline',
   },
-});clear
+});

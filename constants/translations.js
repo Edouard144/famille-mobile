@@ -26,10 +26,13 @@ const T = {
   noAccount:       'Nta konti? Iyandikishe',
 
   // ── Dashboard ────────────────────────────────────
+  hello:           'Muraho',
   goodMorning:     'Mwaramutse',
   goodAfternoon:   'Mwiriwe',
   goodEvening:     'Buhoro',
   todayReminders:  'Ibibutso bya none — Today\'s reminders',
+  reminders:       'Ibibutso — Reminders',
+  pregnancyStatus: 'Ibyo ukuriye — Pregnancy status',
   yourFamilyToday: 'Umuryango wawe uyu munsi',
   children:        'Abana',
   pregnancy:       'Inda',

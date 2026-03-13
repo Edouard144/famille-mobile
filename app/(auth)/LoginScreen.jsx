@@ -97,11 +97,14 @@ export default function LoginScreen({ navigation }) {
 
       // Register Expo push token
       try {
-        const { default: Notifications } =
-          await import('expo-notifications');
-        const { data: expoToken } =
-          await Notifications.getExpoPushTokenAsync();
-        await authAPI.savePushToken(expoToken);
+        // Skip notifications on web - not supported
+        if (typeof window !== 'undefined' && window.ReactNativeNativePart) {
+          const { default: Notifications } =
+            await import('expo-notifications');
+          const { data: expoToken } =
+            await Notifications.getExpoPushTokenAsync();
+          await authAPI.savePushToken(expoToken);
+        }
       } catch (e) {
         console.log('Push token skipped:', e.message);
       }

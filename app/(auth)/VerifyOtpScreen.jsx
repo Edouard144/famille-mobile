@@ -121,9 +121,12 @@ export default function VerifyOtpScreen({ navigation, route }) {
 
       // Register Expo push token with backend
       try {
-        const { default: Notifications } = await import('expo-notifications');
-        const { data: expoToken } = await Notifications.getExpoPushTokenAsync();
-        await authAPI.savePushToken(expoToken);
+        // Skip notifications on web - not supported
+        if (typeof window !== 'undefined' && window.ReactNativeNativePart) {
+          const { default: Notifications } = await import('expo-notifications');
+          const { data: expoToken } = await Notifications.getExpoPushTokenAsync();
+          await authAPI.savePushToken(expoToken);
+        }
       } catch (e) {
         // Push token registration failed — not critical, continue anyway
         console.log('Push token registration skipped:', e.message);
