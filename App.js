@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet, Text, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
+import * as Notifications from 'expo-notifications';
 
 // ── Auth screens ──────────────────────────────────
 import SplashScreen     from './app/(auth)/SplashScreen';
@@ -28,19 +29,12 @@ import Colors   from './constants/colors';
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
-// ─────────────────────────────────────────────────────
-// ── Bottom Tab Navigator ──────────────────────────────
-// This is the MAIN app — shown after login
-// ─────────────────────────────────────────────────────
+// ── Bottom Tab Navigator ──────────────────────────
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-
-        // ── Hide the default header — we draw our own ──
         headerShown: false,
-
-        // ── Tab bar style ──────────────────────────
         tabBarStyle: {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
@@ -54,21 +48,14 @@ function MainTabs() {
           shadowRadius: 12,
           elevation: 10,
         },
-
-        // ── Active / inactive colors ───────────────
         tabBarActiveTintColor:   Colors.teal,
         tabBarInactiveTintColor: Colors.textMuted,
-
-        // ── Label style ───────────────────────────
         tabBarLabelStyle: {
           fontFamily: 'DMSans_500Medium',
           fontSize: 10,
           marginTop: -2,
         },
-
-        // ── Icon per tab ──────────────────────────
-        // We use emoji icons — no icon library needed
-        tabBarIcon: ({ focused, color }) => {
+        tabBarIcon: ({ focused }) => {
           const icons = {
             Home:      focused ? '🏠' : '🏡',
             Children:  focused ? '👶' : '🍼',
@@ -78,115 +65,87 @@ function MainTabs() {
           };
           return (
             <View style={tabStyles.iconWrap}>
-              <TabIcon
-                emoji={icons[route.name] || '●'}
-                focused={focused}
-              />
+              <TabIcon emoji={icons[route.name] || '●'} focused={focused} />
             </View>
           );
         },
       })}
     >
-      {/* Each screen + its tab label in Kinyarwanda */}
-      <Tab.Screen
-        name="Home"
-        component={DashboardScreen}
-        options={{ tabBarLabel: 'Accueil' }}
-      />
-      <Tab.Screen
-        name="Children"
-        component={ChildrenScreen}
-        options={{ tabBarLabel: 'Abana' }}
-      />
-      <Tab.Screen
-        name="Pregnancy"
-        component={PregnancyScreen}
-        options={{ tabBarLabel: 'Inda' }}
-      />
-      <Tab.Screen
-        name="Meals"
-        component={MealsScreen}
-        options={{ tabBarLabel: 'Ifunguro' }}
-      />
-      <Tab.Screen
-        name="Budget"
-        component={BudgetScreen}
-        options={{ tabBarLabel: 'Amafaranga' }}
-      />
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarLabel: 'Accueil' }} />
+      <Tab.Screen name="Children" component={ChildrenScreen} options={{ tabBarLabel: 'Abana' }} />
+      <Tab.Screen name="Pregnancy" component={PregnancyScreen} options={{ tabBarLabel: 'Inda' }} />
+      <Tab.Screen name="Meals" component={MealsScreen} options={{ tabBarLabel: 'Ifunguro' }} />
+      <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Amafaranga' }} />
     </Tab.Navigator>
   );
 }
 
-// ── Small tab icon component ──────────────────────
-// Focused tab gets a teal background pill
+// ── Tab Icon Component ────────────────────────────
 function TabIcon({ emoji, focused }) {
   return (
-    <View style={[
-      tabStyles.iconPill,
-      focused && tabStyles.iconPillActive
-    ]}>
+    <View style={[tabStyles.iconPill, focused && tabStyles.iconPillActive]}>
       <View style={focused ? tabStyles.iconActive : null}>
         <View style={{ opacity: focused ? 1 : 0.7 }}>
-          {/* Emoji rendered as Text is more reliable cross-platform */}
-          <View>
-            <View style={{ alignItems: 'center' }}>
-              {/* Use Text directly inside a View for emoji */}
-              <EmojiIcon emoji={emoji} />
-            </View>
-          </View>
+          <EmojiIcon emoji={emoji} />
         </View>
       </View>
     </View>
   );
 }
 
-// Simple emoji Text wrapper
-import { Text } from 'react-native';
 function EmojiIcon({ emoji }) {
   return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 }
 
 const tabStyles = StyleSheet.create({
-  iconWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconPill: {
-    width: 36,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconPillActive: {
-    backgroundColor: Colors.tealLight,
-  },
-  iconActive: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  iconWrap: { alignItems: 'center', justifyContent: 'center' },
+  iconPill: { width: 36, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  iconPillActive: { backgroundColor: Colors.tealLight },
+  iconActive: { alignItems: 'center', justifyContent: 'center' },
 });
 
-// ─────────────────────────────────────────────────────
-// ── Root App ──────────────────────────────────────────
-// ─────────────────────────────────────────────────────
+// ── Root App ──────────────────────────────────────
 export default function App() {
-
-  // ── Load custom fonts ─────────────────────────────
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_700Bold,
     DMSans_400Regular,
     DMSans_500Medium,
   });
 
-  // ── Check if user is already logged in ───────────
-  // true  = go straight to MainTabs (skip auth)
-  // false = show auth stack
-  // null  = still checking (show spinner)
   const [isLoggedIn, setIsLoggedIn] = useState(null);
+
+  // Push notification setup
+  async function registerForPushNotifications() {
+    try {
+      const { status: existing } = await Notifications.getPermissionsAsync();
+      let finalStatus = existing;
+
+      if (existing !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.log('Push notification permission denied');
+        return;
+      }
+
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Famille Notifications',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#1B6B5A',
+        });
+      }
+    } catch (e) {
+      console.log('Push setup skipped:', e.message);
+    }
+  }
 
   useEffect(() => {
     checkLogin();
+    registerForPushNotifications();
   }, []);
 
   async function checkLogin() {
@@ -194,18 +153,13 @@ export default function App() {
     setIsLoggedIn(loggedIn);
   }
 
-  // ── Show spinner while fonts load or login check ──
   if (!fontsLoaded || isLoggedIn === null) {
     return (
       <View style={styles.loadingScreen}>
         <View style={styles.loadingLogo}>
           <Text style={styles.loadingEmoji}>🏠</Text>
         </View>
-        <ActivityIndicator
-          color={Colors.teal}
-          size="large"
-          style={{ marginTop: 24 }}
-        />
+        <ActivityIndicator color={Colors.teal} size="large" style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -214,43 +168,17 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-
           {isLoggedIn ? (
-            // ── Already logged in → go to main app ──
             <Stack.Screen name="Main" component={MainTabs} />
           ) : (
-            // ── Not logged in → show auth flow ──────
             <>
-              {/* Splash is the first screen */}
-              <Stack.Screen
-                name="Splash"
-                component={SplashScreen}
-                options={{ animation: 'fade' }}
-              />
-              <Stack.Screen
-                name="Register"
-                component={RegisterScreen}
-                options={{ animation: 'slide_from_right' }}
-              />
-              <Stack.Screen
-                name="VerifyOtp"
-                component={VerifyOtpScreen}
-                options={{ animation: 'slide_from_right' }}
-              />
-              <Stack.Screen
-                name="Login"
-                component={LoginScreen}
-                options={{ animation: 'slide_from_bottom' }}
-              />
+              <Stack.Screen name="Splash" component={SplashScreen} options={{ animation: 'fade' }} />
+              <Stack.Screen name="Register" component={RegisterScreen} options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'slide_from_bottom' }} />
             </>
           )}
-
-          {/* ── Main is always available so reset() works ── */}
-          {/* After login from auth screens, we reset to Main */}
-          {!isLoggedIn && (
-            <Stack.Screen name="Main" component={MainTabs} />
-          )}
-
+          {!isLoggedIn && <Stack.Screen name="Main" component={MainTabs} />}
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
@@ -278,7 +206,5 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  loadingEmoji: {
-    fontSize: 36,
-  },
+  loadingEmoji: { fontSize: 36 },
 });
