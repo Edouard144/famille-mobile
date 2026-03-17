@@ -48,7 +48,7 @@ async function request(method, path, body = null) {
 // The base URL for all backend API calls
 // 10.0.2.2 = Android emulator's way to reach your PC's localhost
 
-export const API_BASE_URL = 'http://10.0.2.2:8080/api';
+export const API_BASE_URL = 'http://10.11.73.161:8080/api';
 
 export const authAPI = {
 

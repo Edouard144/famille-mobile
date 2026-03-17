@@ -179,7 +179,6 @@ export default function App() {
               />
             </>
           )}
-          <Stack.Screen name="Main" component={MainTabs} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
