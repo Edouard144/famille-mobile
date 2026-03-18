@@ -1,6 +1,7 @@
 // Replace this at the top of App.js
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -121,6 +122,14 @@ export default function App() {
   async function registerForPushNotifications() {
     // Push notifications not supported on web — skip
     if (Platform.OS === 'web') return;
+    
+    // Push notifications not supported in Expo Go (removed in SDK 53+)
+    // Only register in development builds (appOwnership is null in dev builds)
+    if (Constants.appOwnership === 'expo') {
+      console.log('Push notifications skipped: Running in Expo Go');
+      return;
+    }
+    
     try {
       const Notifications = await import('expo-notifications');
       const { status: existing } =
@@ -151,7 +160,28 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer
+        linking={{
+          prefixes: ['http://localhost:8081', 'https://famille-mobile.com'],
+          config: {
+            screens: {
+              Splash: '',
+              Register: 'register',
+              Login: 'login',
+              VerifyOtp: 'verify-otp',
+              Main: {
+                screens: {
+                  Home: 'dashboard',
+                  Children: 'children',
+                  Pregnancy: 'pregnancy',
+                  Meals: 'meals',
+                  Budget: 'budget',
+                },
+              },
+            },
+          },
+        }}
+      >
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {isLoggedIn ? (
             <Stack.Screen name="Main" component={MainTabs} />

@@ -23,6 +23,8 @@ export default function RegisterScreen({ navigation }) {
   const [loading,       setLoading]       = useState(false);
   const [captchaKey,    setCaptchaKey]    = useState(Date.now()); // changing this reloads captcha
   const [errors,        setErrors]        = useState({});
+  const [captchaLoading, setCaptchaLoading] = useState(true);
+  const [captchaError, setCaptchaError] = useState(false);
 
   // ── Input refs (for keyboard next button) ─────────
   const emailRef    = useRef();
@@ -34,6 +36,8 @@ export default function RegisterScreen({ navigation }) {
   function reloadCaptcha() {
     setCaptchaKey(Date.now()); // new timestamp = new image from server
     setCaptchaAnswer('');
+    setCaptchaLoading(true);
+    setCaptchaError(false);
   }
 
   // ── Validate form before submitting ──────────────
@@ -191,11 +195,32 @@ export default function RegisterScreen({ navigation }) {
 
               <View style={styles.captchaImageRow}>
                 {/* Captcha image from Java backend */}
+                {captchaLoading && (
+                  <View style={[styles.captchaImage, styles.captchaLoading]}>
+                    <ActivityIndicator size="small" color={Colors.teal} />
+                  </View>
+                )}
+                {captchaError && (
+                  <View style={[styles.captchaImage, styles.captchaError]}>
+                    <Text style={styles.captchaErrorText}>⚠️</Text>
+                    <Text style={styles.captchaErrorLabel}>Ntibishoboye</Text>
+                  </View>
+                )}
                 <Image
                   key={captchaKey} // changing key forces reload
                   source={{ uri: authAPI.getCaptchaUrl() }}
-                  style={styles.captchaImage}
+                  style={[styles.captchaImage, (captchaLoading || captchaError) && styles.captchaHidden]}
                   resizeMode="contain"
+                  onLoadStart={() => {
+                    setCaptchaLoading(true);
+                    setCaptchaError(false);
+                  }}
+                  onLoad={() => setCaptchaLoading(false)}
+                  onError={(e) => {
+                    console.log('Captcha load error:', e);
+                    setCaptchaLoading(false);
+                    setCaptchaError(true);
+                  }}
                 />
 
                 {/* Reload button */}
@@ -399,6 +424,29 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
+  },
+  captchaLoading: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captchaHidden: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    opacity: 0,
+  },
+  captchaError: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
+  },
+  captchaErrorText: {
+    fontSize: 20,
+  },
+  captchaErrorLabel: {
+    fontSize: 10,
+    color: '#ef4444',
   },
   reloadBtn: {
     alignItems: 'center',

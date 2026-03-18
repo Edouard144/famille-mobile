@@ -1,7 +1,6 @@
 // services/api.js
-// Central API service — all HTTP calls to the Java backend
-// Every function returns { ok: true/false, data: {...} }
 
+import { budgetAPI } from '../../services/api';
 import storage from './storage';
 import { API_BASE_URL } from '../constants/api';
 
@@ -12,6 +11,10 @@ import { API_BASE_URL } from '../constants/api';
 //   2. Parses the JSON response
 //   3. Returns { ok, data } so screens never crash on errors
 async function request(method, path, body = null) {
+  // Create a timeout controller (10 seconds)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
   try {
     // Build headers
     const headers = { 'Content-Type': 'application/json' };
@@ -21,34 +24,35 @@ async function request(method, path, body = null) {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     // Build fetch options
-    const options = { method, headers };
+    const options = { 
+      method, 
+      headers,
+      signal: controller.signal 
+    };
     if (body) options.body = JSON.stringify(body);
 
     // Make the request
     const res  = await fetch(`${API_BASE_URL}${path}`, options);
+    clearTimeout(timeoutId);
     const data = await res.json().catch(() => ({})); // safe parse
 
     return { ok: res.ok, data };
 
   } catch (err) {
+    clearTimeout(timeoutId);
     // Network error — no internet, server down etc.
     console.error(`API ${method} ${path} failed:`, err.message);
     return {
       ok: false,
-      data: { error: 'Reba interineti yawe. (Check your connection)' }
+      data: { error: err.name === 'AbortError' ? 'Server took too long. Try again.' : 'Reba interineti yawe. (Check your connection)' }
     };
   }
 }
 
-// ─────────────────────────────────────────────────────
-// ── Auth API ──────────────────────────────────────────
-// Matches: /api/auth/* in AuthServlet.java
-// ─────────────────────────────────────────────────────
-// constants/api.js
-// The base URL for all backend API calls
-// 10.0.2.2 = Android emulator's way to reach your PC's localhost
 
-export const API_BASE_URL = 'http://10.11.73.161:8080/api';
+
+export const API_BASE_URL = 'http://192.168.1.122:8080/famille-app-1.0-SNAPSHOT/api';
+
 
 export const authAPI = {
 
@@ -182,6 +186,36 @@ export const mealsAPI = {
     return request('POST', '/meals', {
       childId, date, breakfast, lunch, dinner, snacks, notes
     });
+  },
+};
+
+// ─────────────────────────────────────────────────────
+// ── Budget API ───────────────────────────────────────
+// Matches: /api/budget/* in BudgetServlet.java
+// ─────────────────────────────────────────────────────
+export const budgetAPI = {
+
+  // GET /api/budget
+  // Returns: [ { id, category, amount, date } ]
+  async getAll() {
+    return request('GET', '/budget');
+  },
+
+  // POST /api/budget
+  // Body: { category, amount, date }
+  async add(category, amount, date) {
+    return request('POST', '/budget', { category, amount, date });
+  },
+
+  // PUT /api/budget/:id
+  // Body: { category, amount, date }
+  async update(id, category, amount, date) {
+    return request('PUT', `/budget/${id}`, { category, amount, date });
+  },
+
+  // DELETE /api/budget/:id
+  async remove(id) {
+    return request('DELETE', `/budget/${id}`);
   },
 };
 

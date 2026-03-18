@@ -4,6 +4,7 @@ import {
   ActivityIndicator, StatusBar, Animated, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import Colors from '../../constants/colors';
 import T from '../../constants/translations';
 import { authAPI } from '../../services/api';
@@ -121,8 +122,9 @@ export default function VerifyOtpScreen({ navigation, route }) {
 
       // Register Expo push token with backend
       try {
-        // Skip notifications on web - not supported
-        if (typeof window !== 'undefined' && window.ReactNativeNativePart) {
+        // Push notifications not supported in Expo Go (removed in SDK 53+)
+        // Only register in development builds (appOwnership is null in dev builds)
+        if (Constants.appOwnership !== 'expo') {
           const { default: Notifications } = await import('expo-notifications');
           const { data: expoToken } = await Notifications.getExpoPushTokenAsync();
           await authAPI.savePushToken(expoToken);
